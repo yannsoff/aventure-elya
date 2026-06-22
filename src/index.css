@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: #7c5cff;
+  --accent-soft: #efe9ff;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Nunito', system-ui, sans-serif;
+  background: var(--cream, #fff7ed);
+  color: #3b2a55;
+  overflow: hidden;
+  /* Prevent iOS rubber-band / accidental selection on a kids touch device. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+#root {
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+@layer components {
+  .font-display {
+    font-family: 'Baloo 2', system-ui, sans-serif;
+  }
+
+  /* Big rounded primary button with a satisfying 3D press feel. */
+  .btn-3d {
+    @apply font-display font-bold rounded-pill shadow-inner3d transition-transform duration-100 active:translate-y-1 active:scale-95;
+  }
+
+  .card-blob {
+    @apply rounded-blob bg-white shadow-soft;
+  }
+
+  /* Hide scrollbars where we still allow vertical scroll (parent zone). */
+  .scroll-y {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-y::-webkit-scrollbar {
+    width: 8px;
+  }
+  .scroll-y::-webkit-scrollbar-thumb {
+    background: rgba(124, 92, 255, 0.3);
+    border-radius: 999px;
+  }
+
+  .scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Accent-driven helpers, the accent color is set at runtime from child.accentColor. */
+.bg-accent {
+  background-color: var(--accent);
+}
+.text-accent {
+  color: var(--accent);
+}
+.border-accent {
+  border-color: var(--accent);
+}
+.ring-accent {
+  --tw-ring-color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
