@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useGameStore } from '@/store/useGameStore';
 import { Splash } from '@/screens/Splash';
 import { Onboarding } from '@/screens/Onboarding';
+import { Hub } from '@/screens/Hub';
+import { FlashcardSession } from '@/screens/FlashcardSession';
 import { AdventureMap } from '@/screens/AdventureMap';
 import { WeekScreen } from '@/screens/WeekScreen';
 import { SessionPlayer } from '@/screens/SessionPlayer';
@@ -70,6 +72,8 @@ export function App() {
             >
               {screen === 'splash' && <Splash />}
               {screen === 'onboarding' && <Onboarding />}
+              {screen === 'hub' && <Hub />}
+              {screen === 'flashcards' && <FlashcardSession />}
               {screen === 'map' && <AdventureMap />}
               {screen === 'week' && <WeekScreen />}
               {screen === 'session' && <SessionPlayer />}

@@ -31,7 +31,10 @@ export function SessionPlayer() {
   const itemIds = useRef<string[]>([]);
   if (itemIds.current.length === 0) {
     const { masteries, attempts } = useGameStore.getState();
-    itemIds.current = buildDailySession(week, masteries, attempts).itemIds;
+    itemIds.current = buildDailySession(week, masteries, attempts).itemIds.filter((id) => {
+      const it = getItemById(id);
+      return !!it && !!GAME_COMPONENTS[it.gameType];
+    });
   }
 
   const [index, setIndex] = useState(0);
@@ -95,6 +98,7 @@ export function SessionPlayer() {
 
   if (!item) return null;
   const GameComponent = GAME_COMPONENTS[gameTypes.current[item.id]];
+  if (!GameComponent) return null;
   const siblings = getSiblings(item);
 
   return (

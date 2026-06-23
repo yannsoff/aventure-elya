@@ -3,11 +3,12 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
 
-// GitHub Pages serves this project site under /rankingia/.
-// Use that base for production builds, and '/' for local dev/preview.
+// Base path is environment-driven so the same code deploys both at a domain root
+// (Railway: BASE_PATH unset -> '/') and under a GitHub Pages project subpath
+// (workflow sets BASE_PATH=/aventure-elya/).
 // https://vite.dev/config/
-export default defineConfig(({ command }) => {
-  const base = command === 'build' ? '/aventure-elya/' : '/';
+export default defineConfig(() => {
+  const base = process.env.BASE_PATH || '/';
   return {
   base,
   resolve: {

@@ -27,12 +27,16 @@ const DAY_BONUS = 20;
 export type Screen =
   | 'splash'
   | 'onboarding'
+  | 'hub'
+  | 'flashcards'
   | 'map'
   | 'week'
   | 'session'
   | 'chest'
   | 'trophies'
   | 'parent';
+
+export type DeckMode = 'reading' | 'maths';
 
 const dayId = (w: number, d: number) => `w${w}-d${d}`;
 
@@ -56,14 +60,18 @@ interface GameState {
   screen: Screen;
   activeWeek: number;
   activeDay: number;
+  deckMode: DeckMode;
 
   // Actions
   init: () => Promise<void>;
   completeOnboarding: (child: Child) => Promise<void>;
   setScreen: (s: Screen) => void;
+  openDeck: (deck: DeckMode) => void;
   goToWeek: (weekIndex: number) => void;
   startDay: (weekIndex: number, dayIndex: number) => void;
   recordAttempt: (item: Item, firstTryCorrect: boolean, timeMs: number, sessionId: string) => Promise<void>;
+  recordCard: (cardId: string, category: string, correct: boolean) => Promise<void>;
+  finishFlashcards: () => Promise<void>;
   finishDay: (weekIndex: number, dayIndex: number, itemIds: string[], sessionStars: number) => Promise<void>;
   openChest: (weekIndex: number) => Promise<void>;
   toggleMute: () => Promise<void>;
@@ -95,6 +103,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   screen: 'splash',
   activeWeek: 0,
   activeDay: 0,
+  deckMode: 'reading',
 
   init: async () => {
     const [child, progress, masteries, attempts, daySessions, weekProgress, rewards, muted, unlockAllDays] =
@@ -131,10 +140,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   completeOnboarding: async (child) => {
     await storage.saveChild(child);
     document.documentElement.style.setProperty('--accent', child.accentColor);
-    set({ child, screen: 'map' });
+    set({ child, screen: 'hub' });
   },
 
   setScreen: (s) => set({ screen: s }),
+  openDeck: (deck) => set({ deckMode: deck, screen: 'flashcards' }),
   goToWeek: (weekIndex) => set({ activeWeek: weekIndex, screen: 'week' }),
   startDay: (weekIndex, dayIndex) =>
     set({ activeWeek: weekIndex, activeDay: dayIndex, screen: 'session' }),
@@ -174,6 +184,59 @@ export const useGameStore = create<GameState>((set, get) => ({
       storage.addAttempt(attempt),
       storage.saveProgress(progress),
     ]);
+  },
+
+  // Records one flashcard swipe: right = known (correct), left = "à revoir".
+  // Reuses the Leitner engine + error bank; both directions earn points (effort-first).
+  recordCard: async (cardId, category, correct) => {
+    const state = get();
+    const prevMastery = state.masteries.find((m) => m.itemId === cardId);
+    const newMastery = gradeMastery(prevMastery, cardId, correct);
+
+    const attempt: Attempt = {
+      id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      itemId: cardId,
+      skillId: category,
+      correct,
+      timeMs: 0,
+      date: new Date().toISOString(),
+      sessionId: 'flashcards',
+    };
+
+    const gained = correct ? STAR_CORRECT : STAR_TRY;
+    const totalStars = state.progress.totalStars + gained;
+    const progress: ProgressSummary = {
+      ...state.progress,
+      totalStars,
+      level: levelForStars(totalStars),
+    };
+    const masteries = [...state.masteries.filter((m) => m.itemId !== cardId), newMastery];
+
+    set({ masteries, attempts: [...state.attempts, attempt], progress });
+    await Promise.all([
+      storage.saveMastery(newMastery),
+      storage.addAttempt(attempt),
+      storage.saveProgress(progress),
+    ]);
+  },
+
+  // Completing a flashcard deck counts as a daily activity: bumps the streak.
+  finishFlashcards: async () => {
+    const state = get();
+    const today = todayISO();
+    let streak = state.progress.streak;
+    const last = state.progress.lastActiveDate;
+    if (last !== today) {
+      if (last && dayDiff(last, today) === 1) streak += 1;
+      else streak = 1;
+    } else if (streak === 0) {
+      streak = 1;
+    }
+    const daysCompletedTotal = state.daySessions.filter((s) => s.completed).length;
+    const badges = computeBadges(state.masteries, state.weekProgress, streak, daysCompletedTotal);
+    const progress: ProgressSummary = { ...state.progress, streak, badges, lastActiveDate: today };
+    set({ progress });
+    await storage.saveProgress(progress);
   },
 
   finishDay: async (weekIndex, dayIndex, itemIds, sessionStars) => {

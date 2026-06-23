@@ -48,7 +48,7 @@ export function Splash() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-        <BigButton onClick={() => setScreen('map')} className="flex items-center gap-3 px-12 py-6 text-3xl">
+        <BigButton onClick={() => setScreen('hub')} className="flex items-center gap-3 px-12 py-6 text-3xl">
           <Icon name="Play" size={32} className="fill-white" />
           On joue !
         </BigButton>

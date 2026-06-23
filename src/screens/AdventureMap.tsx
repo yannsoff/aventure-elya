@@ -45,6 +45,18 @@ export function AdventureMap() {
     <div className="relative h-full w-full">
       <StatsBar onParent={() => setScreen('parent')} />
 
+      <button
+        type="button"
+        aria-label="Accueil"
+        onClick={() => {
+          sfx.tap();
+          setScreen('hub');
+        }}
+        className="absolute left-4 top-24 z-30 grid h-12 w-12 place-items-center rounded-full bg-white/80 shadow-soft"
+      >
+        <Icon name="ArrowLeft" size={24} />
+      </button>
+
       <div ref={scrollRef} className="scroll-y h-full w-full pt-24 pb-28">
         <div className="relative mx-auto" style={{ width: 360, height: TOTAL_WEEKS * ROW_H + 80 }}>
           {/* Winding path */}

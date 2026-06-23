@@ -1,8 +1,5 @@
 import type { Domain, GameType, Item, Skill } from '@/types';
-import { GRAPHEMES, CVC_WORDS, PICTURE_WORDS } from './phonics';
-import { HF_SETS, Y2_EXCEPTION_WORDS } from './hfwords';
 import { SENTENCES } from './sentences';
-import { LETTER_PATHS } from './letters';
 
 // Builds the full static catalogue (skills + items) for the 8-week journey.
 // Content is fully data-driven so new items/games can be added without touching engine logic.
@@ -13,10 +10,6 @@ interface Seed {
 }
 
 let _seed: Seed | null = null;
-
-function slug(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '');
-}
 
 export function buildSeed(): Seed {
   if (_seed) return _seed;
@@ -40,63 +33,10 @@ export function buildSeed(): Seed {
     items.push({ id, skillId, gameType, payload });
   };
 
-  // ----- PHONICS: Sound Pop (all weeks, focus weeks 1-2) -----
-  const phonicsSkill = addSkill('sk-phonics-sounds', 'phonics', 'Reconnaître les sons (phonics)', 1, 1);
-  GRAPHEMES.forEach((g) => {
-    addItem(phonicsSkill.id, 'sound_pop', `graph-${slug(g.grapheme)}`, {
-      grapheme: g.grapheme,
-      example: g.example,
-    });
-  });
-
-  // ----- READING: Blend It (CVC decodable words) -----
-  const blendSkill = addSkill('sk-blend-cvc', 'reading', 'Fusionner les sons (lecture)', 1, 2);
-  CVC_WORDS.forEach((w) => {
-    addItem(blendSkill.id, 'blend_it', `cvc-${slug(w.word)}`, { word: w.word, sounds: w.sounds });
-  });
-
-  // ----- READING: Listen & Find (picture words) -----
-  const listenSkill = addSkill('sk-listen-find', 'reading', 'Écouter et trouver', 2, 2);
-  PICTURE_WORDS.forEach((w) => {
-    addItem(listenSkill.id, 'listen_find', `pic-${slug(w.word)}`, { word: w.word, icon: w.icon });
-  });
-
-  // ----- HF WORDS: one skill per set, mapped to focus weeks -----
-  const hfWeekForSet: Record<number, number> = { 1: 1, 2: 3, 3: 5 };
-  [1, 2, 3].forEach((setNo) => {
-    const skill = addSkill(
-      `sk-hf-set${setNo}`,
-      'hfwords',
-      `Mots fréquents — set ${setNo}`,
-      hfWeekForSet[setNo],
-      setNo + 1,
-    );
-    HF_SETS[setNo].forEach((word) => {
-      // word_catch is the canonical assessment; flash_flip/memory_match are variants.
-      addItem(skill.id, 'word_catch', `hf-${slug(word)}`, {
-        word,
-        variants: ['word_catch', 'flash_flip', 'memory_match'] as GameType[],
-      });
-    });
-  });
-
-  // ----- HF WORDS: Year 2 exception words (weeks 5-6) -----
-  const exceptionSkill = addSkill('sk-hf-exception', 'hfwords', 'Mots-pièges Year 2', 5, 4);
-  Y2_EXCEPTION_WORDS.forEach((word) => {
-    addItem(exceptionSkill.id, 'word_catch', `hfx-${slug(word)}`, {
-      word,
-      variants: ['word_catch', 'flash_flip'] as GameType[],
-    });
-  });
-
-  // ----- WRITING: Trace It (priority s & d, then more, plus the name) -----
-  const traceSkill = addSkill('sk-trace', 'writing', 'Former les lettres', 1, 1);
-  // Priority letters first.
-  ['s', 'd'].forEach((l) => addItem(traceSkill.id, 'trace_it', `trace-${l}`, { letter: l, priority: true }));
-  ['a', 'c', 'o', 'e', 'l', 'i', 't', 'n', 'm', 'r', 'p', 'y'].forEach((l) => {
-    if (LETTER_PATHS[l]) addItem(traceSkill.id, 'trace_it', `trace-${l}`, { letter: l });
-  });
-  addItem(traceSkill.id, 'trace_it', 'trace-name', { name: true });
+  // Reading, phonics and the High-Frequency words now live in the swipe
+  // flashcard decks (WordSwipe), where the child reads aloud — a far more
+  // meaningful assessment than tap-to-match. The adventure keeps the
+  // interactive maths games and the sentence-building writing game.
 
   // ----- WRITING: Build a Sentence -----
   const sentenceSkill = addSkill('sk-sentence', 'writing', 'Construire une phrase', 1, 2);

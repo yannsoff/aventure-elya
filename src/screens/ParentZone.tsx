@@ -3,10 +3,20 @@ import { motion } from 'framer-motion';
 import { useGameStore, TOTAL_WEEKS } from '@/store/useGameStore';
 import { Icon, REWARD_ICONS } from '@/components/Icon';
 import { storage } from '@/storage/DexieAdapter';
-import { getAllSkills, getItemById } from '@/content/seed';
+import { getItemById } from '@/content/seed';
+import { allCards, getCardById } from '@/content/flashcards';
 import { WEEK_META, DAY_SHORT } from '@/content/weeksMeta';
 import type { Item } from '@/types';
 import { sfx } from '@/audio/sfx';
+
+// Resolve a human label for any mastery item (seed game item OR flashcard).
+function labelForId(id: string): string | null {
+  const item = getItemById(id);
+  if (item) return itemLabel(item);
+  const card = getCardById(id);
+  if (card) return card.front;
+  return null;
+}
 
 const DEFAULT_PIN = '0000';
 
@@ -164,15 +174,34 @@ function ProgressTab() {
   const progress = useGameStore((s) => s.progress);
   const daySessions = useGameStore((s) => s.daySessions);
   const masteries = useGameStore((s) => s.masteries);
+  const attempts = useGameStore((s) => s.attempts);
   const validateDay = useGameStore((s) => s.validateDay);
-  const skills = getAllSkills();
+
+  // Group flashcard mastery by category (the core content now).
+  const cards = allCards();
+  const masteryById = new Map(masteries.map((m) => [m.itemId, m]));
+  const categoriesByDeck = (deck: 'reading' | 'maths') => {
+    const cats: { category: string; total: number; mastered: number; seen: number }[] = [];
+    const order: string[] = [];
+    cards.filter((c) => c.deck === deck).forEach((c) => {
+      if (!order.includes(c.category)) order.push(c.category);
+    });
+    order.forEach((category) => {
+      const ids = cards.filter((c) => c.deck === deck && c.category === category).map((c) => c.id);
+      const seen = ids.filter((id) => masteryById.has(id)).length;
+      const mastered = ids.filter((id) => masteryById.get(id)?.box === 4).length;
+      cats.push({ category, total: ids.length, mastered, seen });
+    });
+    return cats;
+  };
 
   return (
     <div>
       <Card>
         <div className="flex justify-around text-center">
           <Stat icon="Star" value={progress.totalStars} label="étoiles" />
-          <Stat icon="Flame" value={progress.streak} label="jours de suite" />
+          <Stat icon="Flame" value={progress.streak} label="jours" />
+          <Stat icon="Sparkles" value={attempts.length} label="exercices" />
           <Stat icon="Crown" value={progress.level} label="niveau" />
         </div>
       </Card>
@@ -215,23 +244,29 @@ function ProgressTab() {
         );
       })}
 
-      <h2 className="mb-2 mt-2 font-display text-lg font-extrabold">Maîtrise par compétence</h2>
-      {skills.map((sk) => {
-        const items = masteries.filter((m) => getItemById(m.itemId)?.skillId === sk.id);
-        const mastered = items.filter((m) => m.box === 4).length;
-        const seen = items.length;
-        return (
-          <div key={sk.id} className="mb-2 rounded-2xl bg-white p-3 shadow-soft">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-bold text-ink">{sk.label}</span>
-              <span className="text-ink/50">{mastered} maîtrisés{seen ? ` / ${seen} vus` : ''}</span>
-            </div>
-            <div className="mt-1 h-2 overflow-hidden rounded-pill bg-ink/10">
-              <div className="h-full rounded-pill bg-accent" style={{ width: `${seen ? (mastered / seen) * 100 : 0}%` }} />
-            </div>
-          </div>
-        );
-      })}
+      <h2 className="mb-2 mt-2 font-display text-lg font-extrabold">Maîtrise — Lecture (WordSwipe)</h2>
+      {categoriesByDeck('reading').map((c) => (
+        <MasteryRow key={c.category} {...c} />
+      ))}
+
+      <h2 className="mb-2 mt-4 font-display text-lg font-extrabold">Maîtrise — Maths (NumSwipe)</h2>
+      {categoriesByDeck('maths').map((c) => (
+        <MasteryRow key={c.category} {...c} />
+      ))}
+    </div>
+  );
+}
+
+function MasteryRow({ category, total, mastered, seen }: { category: string; total: number; mastered: number; seen: number }) {
+  return (
+    <div className="mb-2 rounded-2xl bg-white p-3 shadow-soft">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-bold text-ink">{category}</span>
+        <span className="text-ink/50">{mastered} maîtrisés / {total}{seen ? ` · ${seen} vus` : ''}</span>
+      </div>
+      <div className="mt-1 h-2 overflow-hidden rounded-pill bg-ink/10">
+        <div className="h-full rounded-pill bg-accent" style={{ width: `${total ? (mastered / total) * 100 : 0}%` }} />
+      </div>
     </div>
   );
 }
@@ -269,11 +304,11 @@ function ConsolidateTab() {
         </Card>
       ) : (
         bank.map((m) => {
-          const item = getItemById(m.itemId);
-          if (!item) return null;
+          const label = labelForId(m.itemId);
+          if (!label) return null;
           return (
             <div key={m.itemId} className="mb-2 flex items-center justify-between rounded-2xl bg-white p-3 shadow-soft">
-              <span className="font-bold text-ink">{itemLabel(item)}</span>
+              <span className="font-bold text-ink">{label}</span>
               <span className="flex items-center gap-1 rounded-pill bg-sun/20 px-3 py-1 text-sm font-bold text-coral">
                 <Icon name="Heart" size={14} /> {m.timesWrong}× à revoir
               </span>

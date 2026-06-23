@@ -1,13 +1,6 @@
 import type { ComponentType } from 'react';
 import type { GameType, Item } from '@/types';
 import type { GameProps } from './types';
-import { SoundPop } from './SoundPop';
-import { BlendIt } from './BlendIt';
-import { ListenFind } from './ListenFind';
-import { WordCatch } from './WordCatch';
-import { FlashFlip } from './FlashFlip';
-import { MemoryMatch } from './MemoryMatch';
-import { TraceIt } from './TraceIt';
 import { BuildSentence } from './BuildSentence';
 import { NumberBonds } from './NumberBonds';
 import { DoubleTrouble } from './DoubleTrouble';
@@ -18,14 +11,10 @@ import { AddTake } from './AddTake';
 import { FractionPizza } from './FractionPizza';
 import { TimesGroups } from './TimesGroups';
 
-export const GAME_COMPONENTS: Record<GameType, ComponentType<GameProps>> = {
-  sound_pop: SoundPop,
-  blend_it: BlendIt,
-  listen_find: ListenFind,
-  word_catch: WordCatch,
-  flash_flip: FlashFlip,
-  memory_match: MemoryMatch,
-  trace_it: TraceIt,
+// Active interactive games in the "Aventure". Reading/phonics recognition games
+// and letter-tracing were removed: reading is now assessed via WordSwipe flashcards
+// (the child reads aloud), which is more meaningful for a Year 2/3 target.
+export const GAME_COMPONENTS: Partial<Record<GameType, ComponentType<GameProps>>> = {
   build_sentence: BuildSentence,
   number_bonds: NumberBonds,
   double_trouble: DoubleTrouble,
@@ -37,15 +26,7 @@ export const GAME_COMPONENTS: Record<GameType, ComponentType<GameProps>> = {
   times_groups: TimesGroups,
 };
 
-// FR label per game type (used in the parent dashboard / session pips).
-export const GAME_LABELS: Record<GameType, string> = {
-  sound_pop: 'Les sons',
-  blend_it: 'Fusionner',
-  listen_find: 'Écoute et trouve',
-  word_catch: 'Attrape le mot',
-  flash_flip: 'Carte éclair',
-  memory_match: 'Les paires',
-  trace_it: 'Tracer',
+export const GAME_LABELS: Partial<Record<GameType, string>> = {
   build_sentence: 'La phrase',
   number_bonds: 'Compléments',
   double_trouble: 'Les doubles',
@@ -57,7 +38,7 @@ export const GAME_LABELS: Record<GameType, string> = {
   times_groups: 'Les groupes',
 };
 
-// Resolve which game variant renders an item (HF words rotate through variants).
+// Resolve which game renders an item (kept for forward-compat with variants).
 export function pickGameType(item: Item): GameType {
   const variants = item.payload.variants as GameType[] | undefined;
   if (variants && variants.length > 0) {
